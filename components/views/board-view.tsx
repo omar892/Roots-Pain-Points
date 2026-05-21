@@ -1,15 +1,21 @@
 import { Badge } from "@/components/ui/badge";
-import { DEPARTMENTS, DEPT_COLORS } from "@/lib/constants";
+import { deptColor } from "@/lib/constants";
 import type { PainPoint } from "@/lib/types";
 
 interface BoardViewProps {
   painPoints: PainPoint[];
+  departments: string[];
   filter: string;
   setFilter: (filter: string) => void;
 }
 
-export function BoardView({ painPoints, filter, setFilter }: BoardViewProps) {
-  const filters = ["All", ...DEPARTMENTS];
+export function BoardView({
+  painPoints,
+  departments,
+  filter,
+  setFilter,
+}: BoardViewProps) {
+  const filters = ["All", ...departments];
 
   return (
     <div>
@@ -55,7 +61,7 @@ export function BoardView({ painPoints, filter, setFilter }: BoardViewProps) {
 }
 
 function PainPointCard({ point }: { point: PainPoint }) {
-  const c = DEPT_COLORS[point.department];
+  const c = deptColor(point.department);
   return (
     <div
       className={`${c.bg} border ${c.border} rounded-lg p-4 hover:shadow-md transition-shadow`}
@@ -70,21 +76,25 @@ function PainPointCard({ point }: { point: PainPoint }) {
         </span>
       </div>
       <h3 className="font-semibold text-stone-900 mb-1.5">{point.title}</h3>
-      <p className="text-sm text-stone-600 mb-3">{point.description}</p>
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {point.tags.map((t) => (
-          <Badge
-            key={t}
-            variant="secondary"
-            className="bg-white/70 text-stone-700 font-normal rounded"
-          >
-            {t}
-          </Badge>
-        ))}
-      </div>
-      <div className="text-xs text-stone-500 flex justify-between items-center pt-2 border-t border-stone-200/50">
+      {point.description && (
+        <p className="text-sm text-stone-600 mb-3">{point.description}</p>
+      )}
+      {point.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {point.tags.map((t) => (
+            <Badge
+              key={t}
+              variant="secondary"
+              className="bg-white/70 text-stone-700 font-normal rounded"
+            >
+              {t}
+            </Badge>
+          ))}
+        </div>
+      )}
+      <div className="text-xs text-stone-500 flex justify-between items-center gap-2 pt-2 border-t border-stone-200/50">
         <span className="font-medium">{point.person}</span>
-        <span>{point.timeSpent} each time</span>
+        {point.timeSpent && <span className="text-right">{point.timeSpent} each time</span>}
       </div>
     </div>
   );

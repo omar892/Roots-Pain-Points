@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { DEPT_COLORS, QUADRANT_GRID, QUADRANT_META } from "@/lib/constants";
+import { deptColor, QUADRANT_GRID, QUADRANT_META } from "@/lib/constants";
 import { Quadrant, type PainPoint, type Placements } from "@/lib/types";
 
 interface PrioritizeViewProps {
@@ -80,7 +80,7 @@ function UnplacedChip({
   point: PainPoint;
   onPlace: (quadrant: Quadrant) => void;
 }) {
-  const c = DEPT_COLORS[point.department];
+  const c = deptColor(point.department);
   const [open, setOpen] = useState(false);
 
   return (
@@ -136,7 +136,7 @@ function QuadrantCell({
           </div>
         )}
         {points.map((p) => {
-          const c = DEPT_COLORS[p.department];
+          const c = deptColor(p.department);
           return (
             <div
               key={p.id}

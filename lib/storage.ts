@@ -1,5 +1,4 @@
 import {
-  Department,
   Quadrant,
   type Frequency,
   type PainPoint,
@@ -12,8 +11,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 const QUADRANT_VALUES = Object.values(Quadrant) as string[];
-const DEPARTMENT_VALUES = Object.values(Department) as string[];
-const FREQUENCY_VALUES: Frequency[] = ["Daily", "Weekly", "Monthly"];
+const FREQUENCY_VALUES: Frequency[] = ["Daily", "Weekly", "Monthly", "Occasionally"];
 
 /** localStorage is unavailable during SSR / Cloudflare's edge runtime. */
 function getStorage(): Storage | null {
@@ -96,16 +94,15 @@ export function validatePainPoints(value: unknown): ValidationResult {
       return { ok: false, error: `${where}: duplicate id ${item.id}.` };
     }
     seenIds.add(item.id);
-    for (const field of ["title", "person", "timeSpent", "description"]) {
+    for (const field of ["title", "person", "department"]) {
       if (typeof item[field] !== "string" || (item[field] as string).trim() === "") {
         return { ok: false, error: `${where}: "${field}" must be a non-empty string.` };
       }
     }
-    if (!DEPARTMENT_VALUES.includes(item.department as string)) {
-      return {
-        ok: false,
-        error: `${where}: "department" must be one of ${DEPARTMENT_VALUES.join(", ")}.`,
-      };
+    for (const field of ["timeSpent", "description"]) {
+      if (item[field] !== undefined && typeof item[field] !== "string") {
+        return { ok: false, error: `${where}: "${field}" must be a string when present.` };
+      }
     }
     if (!FREQUENCY_VALUES.includes(item.frequency as Frequency)) {
       return {

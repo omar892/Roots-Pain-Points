@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { DEPT_COLORS } from "@/lib/constants";
+import { deptColor } from "@/lib/constants";
 import { getPattern } from "@/lib/patterns";
 import type { PainPoint } from "@/lib/types";
 
@@ -26,8 +26,8 @@ export function PatternsView({ highPriority, isDefault }: PatternsViewProps) {
 
       <div className="space-y-4">
         {highPriority.map((p) => {
-          const pattern = getPattern(p);
-          const c = DEPT_COLORS[p.department];
+          const pattern = p.pattern ?? getPattern(p);
+          const c = deptColor(p.department);
           return (
             <div
               key={p.id}

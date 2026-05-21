@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { MOCK_PAIN_POINTS } from "@/lib/data";
+import { fetchPainPoints } from "@/lib/sheet";
 import { Quadrant, type PainPoint, type Placements } from "@/lib/types";
 import {
   clearPlacements,
@@ -33,14 +34,28 @@ export function PainPointStudio() {
   const [painPoints, setPainPoints] = useState<PainPoint[]>(MOCK_PAIN_POINTS);
   const [placements, setPlacements] = useState<Placements>({});
   const [hydrated, setHydrated] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "live" | "offline">(
+    "loading"
+  );
+
+  // Pull the latest form responses; fall back to saved/sample data if unreachable.
+  const loadFromSheet = useCallback(async () => {
+    setLoadState("loading");
+    try {
+      setPainPoints(await fetchPainPoints());
+      setLoadState("live");
+    } catch {
+      setPainPoints(loadData() ?? MOCK_PAIN_POINTS);
+      setLoadState("offline");
+    }
+  }, []);
 
   // localStorage is client-only — read it after mount, never during SSR.
   useEffect(() => {
-    const stored = loadData();
-    if (stored) setPainPoints(stored);
     setPlacements(loadPlacements());
     setHydrated(true);
-  }, []);
+    loadFromSheet();
+  }, [loadFromSheet]);
 
   // Persist quadrant placements once the initial read has completed.
   useEffect(() => {
@@ -60,6 +75,10 @@ export function PainPointStudio() {
     setPlacements({});
     clearPlacements();
   };
+
+  const departments = Array.from(
+    new Set(painPoints.map((p) => p.department))
+  ).sort();
 
   const filtered =
     filter === "All"
@@ -83,18 +102,35 @@ export function PainPointStudio() {
             <span className="text-sm text-stone-500">
               Working Session · Friday 11:30am CDT
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetSession}
-              className="ml-auto border-stone-300 bg-white/70 text-stone-700 hover:bg-white"
-            >
-              Reset session
-            </Button>
+            <div className="ml-auto flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadFromSheet}
+                disabled={loadState === "loading"}
+                className="border-stone-300 bg-white/70 text-stone-700 hover:bg-white"
+              >
+                {loadState === "loading" ? "Refreshing…" : "Refresh data"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetSession}
+                className="border-stone-300 bg-white/70 text-stone-700 hover:bg-white"
+              >
+                Reset session
+              </Button>
+            </div>
           </div>
           <p className="text-stone-600 mt-2">
             Mapping where AI can ease the work — together, out loud.
           </p>
+          {loadState === "offline" && (
+            <p className="text-xs text-amber-800 mt-1">
+              Couldn&apos;t reach the response sheet — showing saved or sample
+              data. Try Refresh.
+            </p>
+          )}
         </div>
       </header>
 
@@ -118,7 +154,12 @@ export function PainPointStudio() {
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {view === "board" && (
-          <BoardView painPoints={filtered} filter={filter} setFilter={setFilter} />
+          <BoardView
+            painPoints={filtered}
+            departments={departments}
+            filter={filter}
+            setFilter={setFilter}
+          />
         )}
         {view === "prioritize" && (
           <PrioritizeView

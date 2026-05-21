@@ -1,11 +1,4 @@
-import type { PainPoint } from "@/lib/types";
-
-export interface Pattern {
-  name: string;
-  description: string;
-  features: string[];
-  firstStep: string;
-}
+import type { PainPoint, Pattern } from "@/lib/types";
 
 export function getPattern(point: PainPoint): Pattern {
   if (

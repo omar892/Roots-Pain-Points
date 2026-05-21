@@ -138,18 +138,17 @@ export default function AdminPage() {
               <code>id</code> — unique integer
             </li>
             <li>
-              <code>title</code>, <code>person</code>, <code>timeSpent</code>,{" "}
-              <code>description</code> — non-empty strings
+              <code>title</code>, <code>person</code>, <code>department</code> —
+              non-empty strings
             </li>
             <li>
-              <code>department</code> — Development, Programs, Community
-              Engagement, or Operations
-            </li>
-            <li>
-              <code>frequency</code> — Daily, Weekly, or Monthly
+              <code>frequency</code> — Daily, Weekly, Monthly, or Occasionally
             </li>
             <li>
               <code>tags</code> — array of strings
+            </li>
+            <li>
+              <code>timeSpent</code>, <code>description</code> — optional strings
             </li>
           </ul>
         </div>
