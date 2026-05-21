@@ -1,62 +1,128 @@
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { deptColor } from "@/lib/constants";
 import { getPattern } from "@/lib/patterns";
-import type { PainPoint } from "@/lib/types";
+import type { Commitments, PainPoint, Pattern } from "@/lib/types";
 
 interface PatternsViewProps {
-  highPriority: PainPoint[];
+  points: PainPoint[];
   isDefault: boolean;
+  commitments: Commitments;
+  toggleCommitment: (id: number) => void;
 }
 
 const georgia = { fontFamily: "Georgia, serif" };
 
-export function PatternsView({ highPriority, isDefault }: PatternsViewProps) {
+/** A pattern and the pain points that map to it. */
+interface PatternGroup {
+  pattern: Pattern;
+  points: PainPoint[];
+}
+
+function resolvePattern(p: PainPoint): Pattern {
+  return p.pattern ?? getPattern(p);
+}
+
+function groupByPattern(points: PainPoint[]): PatternGroup[] {
+  const groups = new Map<string, PatternGroup>();
+  for (const p of points) {
+    const pattern = resolvePattern(p);
+    const existing = groups.get(pattern.name);
+    if (existing) existing.points.push(p);
+    else groups.set(pattern.name, { pattern, points: [p] });
+  }
+  // Most leverage first — the pattern that clears the most pain points.
+  return [...groups.values()].sort((a, b) => b.points.length - a.points.length);
+}
+
+export function PatternsView({
+  points,
+  isDefault,
+  commitments,
+  toggleCommitment,
+}: PatternsViewProps) {
+  const [filter, setFilter] = useState("All");
+
+  const departments = Array.from(new Set(points.map((p) => p.department))).sort();
+  const filters = ["All", ...departments];
+  const visible =
+    filter === "All" ? points : points.filter((p) => p.department === filter);
+  const groups = groupByPattern(visible);
+
+  const committedCount = visible.filter((p) => commitments[p.id]).length;
+
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <h2 className="text-xl font-semibold mb-1">
-          AI patterns for our top opportunities
+          {isDefault
+            ? "AI patterns for every pain point"
+            : "AI patterns for our top opportunities"}
         </h2>
         <p className="text-stone-600 text-sm">
-          {isDefault
-            ? 'Sample patterns shown — place items in the "Start Here" quadrant to populate this view with your real priorities.'
-            : "For each priority pain point, here's the specific Claude pattern that addresses it."}
+          Pain points are grouped by the Claude pattern that solves them — one
+          setup can clear several. Check the box on each to commit to trying it.
         </p>
       </div>
 
+      {isDefault && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 text-sm text-amber-900">
+          Showing <strong>all</strong> pain points. Place items in the{" "}
+          <strong>Start Here</strong> quadrant on the Prioritize tab to focus
+          this view on the group&apos;s real priorities.
+        </div>
+      )}
+
+      {/* Filters — same control as The Board */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        {filters.map((d) => (
+          <button
+            key={d}
+            onClick={() => setFilter(d)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+              filter === d
+                ? "bg-stone-900 text-white border-stone-900"
+                : "bg-white text-stone-700 border-stone-300 hover:border-stone-500"
+            }`}
+          >
+            {d}
+          </button>
+        ))}
+        <span className="ml-auto text-xs font-medium text-stone-500">
+          {committedCount} of {visible.length} committed
+        </span>
+      </div>
+
       <div className="space-y-4">
-        {highPriority.map((p) => {
-          const pattern = p.pattern ?? getPattern(p);
-          const c = deptColor(p.department);
+        {groups.map(({ pattern, points: groupPoints }) => {
+          const committedInGroup = groupPoints.filter(
+            (p) => commitments[p.id]
+          ).length;
           return (
             <div
-              key={p.id}
+              key={pattern.name}
               className="bg-white border border-stone-200 rounded-lg overflow-hidden"
             >
-              <div className={`${c.bg} px-5 py-3 border-b ${c.border}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${c.dot}`} />
-                  <span className={`text-xs font-medium ${c.text}`}>
-                    {p.department} · {p.person}
+              <div className="px-5 pt-4 pb-3 border-b border-stone-100">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <span className="text-xs uppercase tracking-wider text-stone-500 font-semibold">
+                    Pattern
+                  </span>
+                  <span className="text-xs font-medium text-stone-500">
+                    {committedInGroup}/{groupPoints.length} committed
                   </span>
                 </div>
-                <h3 className="font-semibold text-lg">{p.title}</h3>
-              </div>
-              <div className="p-5">
-                <div className="text-xs uppercase tracking-wider text-stone-500 mb-1 font-semibold">
-                  Pattern
-                </div>
                 <div
-                  className="font-bold text-amber-900 mb-2 text-lg"
+                  className="font-bold text-amber-900 text-lg mb-1"
                   style={georgia}
                 >
                   {pattern.name}
                 </div>
-                <p className="text-sm text-stone-700 mb-4 leading-relaxed">
+                <p className="text-sm text-stone-700 leading-relaxed mb-3">
                   {pattern.description}
                 </p>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <div className="flex flex-wrap gap-1.5">
                   {pattern.features.map((f) => (
                     <Badge
                       key={f}
@@ -67,12 +133,29 @@ export function PatternsView({ highPriority, isDefault }: PatternsViewProps) {
                     </Badge>
                   ))}
                 </div>
+              </div>
 
-                <div className="bg-amber-50 border border-amber-200 rounded p-3">
-                  <div className="text-xs uppercase tracking-wider text-amber-900 mb-1 font-semibold">
-                    First step this week
-                  </div>
-                  <p className="text-sm text-stone-800">{pattern.firstStep}</p>
+              <div className="px-5 py-3 bg-amber-50/60 border-b border-amber-100">
+                <div className="text-xs uppercase tracking-wider text-amber-900 mb-0.5 font-semibold">
+                  First step this week
+                </div>
+                <p className="text-sm text-stone-800">{pattern.firstStep}</p>
+              </div>
+
+              <div className="p-3">
+                <div className="text-xs uppercase tracking-wider text-stone-400 font-semibold px-1 mb-1.5">
+                  Clears {groupPoints.length}{" "}
+                  {groupPoints.length === 1 ? "pain point" : "pain points"}
+                </div>
+                <div className="space-y-1.5">
+                  {groupPoints.map((p) => (
+                    <CommitRow
+                      key={p.id}
+                      point={p}
+                      committed={!!commitments[p.id]}
+                      onToggle={() => toggleCommitment(p.id)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -80,5 +163,51 @@ export function PatternsView({ highPriority, isDefault }: PatternsViewProps) {
         })}
       </div>
     </div>
+  );
+}
+
+function CommitRow({
+  point,
+  committed,
+  onToggle,
+}: {
+  point: PainPoint;
+  committed: boolean;
+  onToggle: () => void;
+}) {
+  const c = deptColor(point.department);
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={committed}
+      onClick={onToggle}
+      className={`w-full flex items-center gap-2.5 text-left rounded-lg border px-3 py-2 transition-colors ${
+        committed
+          ? "bg-emerald-50 border-emerald-300"
+          : "bg-white border-stone-200 hover:border-stone-400"
+      }`}
+    >
+      <span
+        className={`flex-shrink-0 w-4 h-4 rounded flex items-center justify-center text-[11px] font-bold border ${
+          committed
+            ? "bg-emerald-600 border-emerald-600 text-white"
+            : "bg-white border-stone-300 text-transparent"
+        }`}
+      >
+        ✓
+      </span>
+      <span className={`w-1.5 h-1.5 rounded-full ${c.dot} flex-shrink-0`} />
+      <span
+        className={`text-sm font-medium ${
+          committed ? "text-emerald-900" : "text-stone-900"
+        }`}
+      >
+        {point.title}
+      </span>
+      <span className="ml-auto text-xs text-stone-500 whitespace-nowrap">
+        {point.person} · {point.department}
+      </span>
+    </button>
   );
 }

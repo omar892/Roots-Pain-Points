@@ -1,5 +1,6 @@
 import {
   Quadrant,
+  type Commitments,
   type Frequency,
   type PainPoint,
   type Placements,
@@ -7,6 +8,7 @@ import {
 
 export const STORAGE_KEYS = {
   placements: "roots-studio-placements-v1",
+  commitments: "roots-studio-commitments-v1",
   data: "roots-studio-data-v1",
 } as const;
 
@@ -61,6 +63,49 @@ export function clearPlacements(): void {
   if (!storage) return;
   try {
     storage.removeItem(STORAGE_KEYS.placements);
+  } catch {
+    /* ignore */
+  }
+}
+
+/* ------------------------------ commitments ------------------------------- */
+
+export function loadCommitments(): Commitments {
+  const storage = getStorage();
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(STORAGE_KEYS.commitments);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const result: Commitments = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      const id = Number(key);
+      if (Number.isInteger(id) && value === true) {
+        result[id] = true;
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+export function saveCommitments(commitments: Commitments): void {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(STORAGE_KEYS.commitments, JSON.stringify(commitments));
+  } catch {
+    /* quota exceeded or storage disabled — commitments stay in memory only */
+  }
+}
+
+export function clearCommitments(): void {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    storage.removeItem(STORAGE_KEYS.commitments);
   } catch {
     /* ignore */
   }

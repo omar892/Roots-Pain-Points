@@ -31,3 +31,6 @@ export interface PainPoint {
 
 /** Maps a pain point id to the quadrant it has been placed in. */
 export type Placements = Record<number, Quadrant>;
+
+/** Pain point ids the group has committed to trying before next session. */
+export type Commitments = Record<number, boolean>;

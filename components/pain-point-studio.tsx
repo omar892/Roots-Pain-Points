@@ -5,11 +5,19 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MOCK_PAIN_POINTS } from "@/lib/data";
 import { fetchPainPoints } from "@/lib/sheet";
-import { Quadrant, type PainPoint, type Placements } from "@/lib/types";
 import {
+  Quadrant,
+  type Commitments,
+  type PainPoint,
+  type Placements,
+} from "@/lib/types";
+import {
+  clearCommitments,
   clearPlacements,
+  loadCommitments,
   loadData,
   loadPlacements,
+  saveCommitments,
   savePlacements,
 } from "@/lib/storage";
 import { BoardView } from "@/components/views/board-view";
@@ -33,6 +41,7 @@ export function PainPointStudio() {
   const [filter, setFilter] = useState<string>("All");
   const [painPoints, setPainPoints] = useState<PainPoint[]>(MOCK_PAIN_POINTS);
   const [placements, setPlacements] = useState<Placements>({});
+  const [commitments, setCommitments] = useState<Commitments>({});
   const [hydrated, setHydrated] = useState(false);
   const [loadState, setLoadState] = useState<"loading" | "live" | "offline">(
     "loading"
@@ -53,6 +62,7 @@ export function PainPointStudio() {
   // localStorage is client-only — read it after mount, never during SSR.
   useEffect(() => {
     setPlacements(loadPlacements());
+    setCommitments(loadCommitments());
     setHydrated(true);
     loadFromSheet();
   }, [loadFromSheet]);
@@ -63,17 +73,42 @@ export function PainPointStudio() {
     savePlacements(placements);
   }, [placements, hydrated]);
 
+  // Persist commitments once the initial read has completed.
+  useEffect(() => {
+    if (!hydrated) return;
+    saveCommitments(commitments);
+  }, [commitments, hydrated]);
+
   const placePoint = (id: number, quadrant: Quadrant) => {
     setPlacements((prev) => ({ ...prev, [id]: quadrant }));
   };
 
+  const removePlacement = (id: number) => {
+    setPlacements((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const toggleCommitment = (id: number) => {
+    setCommitments((prev) => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = true;
+      return next;
+    });
+  };
+
   const resetSession = () => {
     const confirmed = window.confirm(
-      "Reset this session? All quadrant placements will be cleared. This cannot be undone."
+      "Reset this session? All quadrant placements and commitments will be cleared. This cannot be undone."
     );
     if (!confirmed) return;
     setPlacements({});
+    setCommitments({});
     clearPlacements();
+    clearCommitments();
   };
 
   const departments = Array.from(
@@ -88,8 +123,7 @@ export function PainPointStudio() {
   const startHere = painPoints.filter(
     (p) => placements[p.id] === Quadrant.StartHere
   );
-  const patternsShown =
-    startHere.length > 0 ? startHere : painPoints.slice(0, 3);
+  const patternsShown = startHere.length > 0 ? startHere : painPoints;
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
@@ -166,16 +200,24 @@ export function PainPointStudio() {
             painPoints={painPoints}
             placements={placements}
             placePoint={placePoint}
+            removePlacement={removePlacement}
           />
         )}
         {view === "patterns" && (
           <PatternsView
-            highPriority={patternsShown}
+            points={patternsShown}
             isDefault={startHere.length === 0}
+            commitments={commitments}
+            toggleCommitment={toggleCommitment}
           />
         )}
         {view === "summary" && (
-          <SummaryView painPoints={painPoints} placements={placements} />
+          <SummaryView
+            painPoints={painPoints}
+            placements={placements}
+            commitments={commitments}
+            toggleCommitment={toggleCommitment}
+          />
         )}
       </main>
 
