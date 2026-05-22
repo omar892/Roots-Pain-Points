@@ -7,12 +7,23 @@ export enum Quadrant {
 
 export type Frequency = "Daily" | "Weekly" | "Monthly" | "Occasionally";
 
+/** The concrete first move for a pattern: an open-ended question to explore,
+ *  a copyable starter prompt, and what to notice while doing the work. */
+export interface FirstStep {
+  /** Open-ended invitation to explore the task — the default render. */
+  question: string;
+  /** A first-person prompt the person can copy and paste to Claude. */
+  starter_prompt: string;
+  /** What to notice while working — surfaces the gap to close next. */
+  watch_for: string;
+}
+
 /** An AI-adoption pattern — either rule-derived or written by Claude during curation. */
 export interface Pattern {
   name: string;
   description: string;
   features: string[];
-  firstStep: string;
+  firstStep: FirstStep;
 }
 
 export interface PainPoint {

@@ -262,7 +262,8 @@ export function SummaryView({
                       <span className="text-sm text-stone-700">{p.title}</span>
                     </span>
                     <span className="block text-xs text-stone-500 mt-0.5">
-                      Pattern: <strong>{pattern.name}</strong> — {pattern.firstStep}
+                      Pattern: <strong>{pattern.name}</strong> —{" "}
+                      {pattern.firstStep.question}
                     </span>
                   </span>
                 </button>

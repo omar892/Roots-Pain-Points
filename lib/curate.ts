@@ -17,7 +17,10 @@ For each submission, produce a curated version for the workshop board:
 - title: a short, plain title for the task (aim for 3-8 words), derived from what they wrote. Do not pad it — a simple task gets a simple title.
 - description: 1-2 sentences capturing the pain point in the submitter's own voice. Lightly clean up — fix typos, trim rambling, make it readable — but keep their meaning and tone, and do NOT add detail they didn't give. If the submission is already short and clear, keep the description short.
 - tags: 1-3 short tags naming the nature of the work (e.g. "Writing-heavy", "Repetitive", "Scheduling", "Data gathering", "Synthesis", "Stakeholder-heavy"). Invent a fitting tag if needed.
-- pattern: a concrete, practical way Claude could help with THIS specific task — name (short label for the approach), description (1-2 sentences on how it works here), features (2-4 short capability tags), firstStep (one concrete action to take this week).
+- pattern: a concrete, practical way Claude could help with THIS specific task — name (short label for the approach), description (1-2 sentences on how it works here), features (2-4 short capability tags), and firstStep, an object with three fields:
+  - question: an open-ended question (max 2 sentences) that gets the person thinking about THEIR specific context, not the generic problem. Lead with discovery, not an action item. Use phrasing like "talk this through with Claude" or "let Claude help you think about…" — never "ask Claude to…".
+  - starter_prompt: a prompt written in the first person, as if the person will paste it to Claude. Include bracketed placeholders like [paste your notes] where their context goes, and include "ask me clarifying questions before suggesting anything" when it fits.
+  - watch_for: one sentence on what to notice while doing the work.
 
 Be specific to each submission — a grant-writing pain point and an inventory-tracking pain point should get different patterns. Keep everything concise and grounded in what the person actually wrote.`;
 
@@ -42,7 +45,16 @@ const OUTPUT_SCHEMA = {
               name: { type: "string" },
               description: { type: "string" },
               features: { type: "array", items: { type: "string" } },
-              firstStep: { type: "string" },
+              firstStep: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  question: { type: "string" },
+                  starter_prompt: { type: "string" },
+                  watch_for: { type: "string" },
+                },
+                required: ["question", "starter_prompt", "watch_for"],
+              },
             },
             required: ["name", "description", "features", "firstStep"],
           },

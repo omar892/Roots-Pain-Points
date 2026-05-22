@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { deptColor } from "@/lib/constants";
 import { getPattern } from "@/lib/patterns";
-import type { Commitments, PainPoint, Pattern } from "@/lib/types";
+import type { Commitments, FirstStep, PainPoint, Pattern } from "@/lib/types";
 
 interface PatternsViewProps {
   points: PainPoint[];
@@ -135,12 +135,7 @@ export function PatternsView({
                 </div>
               </div>
 
-              <div className="px-5 py-3 bg-amber-50/60 border-b border-amber-100">
-                <div className="text-xs uppercase tracking-wider text-amber-900 mb-0.5 font-semibold">
-                  First step this week
-                </div>
-                <p className="text-sm text-stone-800">{pattern.firstStep}</p>
-              </div>
+              <FirstStepBlock firstStep={pattern.firstStep} />
 
               <div className="p-3">
                 <div className="text-xs uppercase tracking-wider text-stone-400 font-semibold px-1 mb-1.5">
@@ -209,5 +204,63 @@ function CommitRow({
         {point.person} · {point.department}
       </span>
     </button>
+  );
+}
+
+function FirstStepBlock({ firstStep }: { firstStep: FirstStep }) {
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(firstStep.starter_prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — the prompt is already visible to copy by hand.
+    }
+  };
+
+  return (
+    <div className="px-5 py-3 bg-amber-50/60 border-b border-amber-100">
+      <div className="text-xs uppercase tracking-wider text-amber-900 mb-1 font-semibold">
+        First step this week
+      </div>
+      <p className="text-sm text-stone-800 leading-relaxed">
+        {firstStep.question}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setShowPrompt((v) => !v)}
+        className="mt-2 text-xs font-medium text-amber-800 hover:text-amber-900"
+      >
+        {showPrompt ? "Hide starter prompt ▴" : "Stuck? See a starter prompt ▾"}
+      </button>
+
+      {showPrompt && (
+        <div className="mt-2 rounded-md border border-stone-200 bg-white overflow-hidden">
+          <div className="flex items-center justify-between px-2.5 py-1 bg-stone-50 border-b border-stone-100">
+            <span className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold">
+              Starter prompt
+            </span>
+            <button
+              type="button"
+              onClick={copyPrompt}
+              className="text-[11px] font-medium text-stone-600 hover:text-stone-900 border border-stone-300 rounded px-2 py-0.5 bg-white"
+            >
+              {copied ? "Copied ✓" : "Copy"}
+            </button>
+          </div>
+          <pre className="text-xs font-mono text-stone-800 whitespace-pre-wrap p-3 leading-relaxed">
+            {firstStep.starter_prompt}
+          </pre>
+        </div>
+      )}
+
+      <p className="text-xs italic text-stone-500 mt-2">
+        What to watch for: {firstStep.watch_for}
+      </p>
+    </div>
   );
 }
